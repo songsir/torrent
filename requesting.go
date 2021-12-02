@@ -257,7 +257,10 @@ func (p *Peer) applyRequestState(next desiredRequestState) bool {
 	if !more {
 		return false
 	}
-	for _, req := range next.Requests {
+	shuffled := false
+	lastPending := 0
+	for i := 0; i < len(next.Requests); i++ {
+		req := next.Requests[i]
 		if p.cancelledRequests.Contains(req) {
 			// Waiting for a reject or piece message, which will suitably trigger us to update our
 			// requests, so we can skip this one with no additional consideration.
@@ -277,6 +280,30 @@ func (p *Peer) applyRequestState(next desiredRequestState) bool {
 			//)
 			break
 		}
+		otherPending := p.t.pendingRequests.Get(next.Requests[0])
+		if p.actualRequestState.Requests.Contains(next.Requests[0]) {
+			otherPending--
+		}
+		if otherPending < lastPending {
+			// Pending should only rise. It's supposed to be the strongest ordering criteria. If it
+			// doesn't, our shuffling condition could be wrong.
+			panic(lastPending)
+		}
+		// If the request has already been requested by another peer, shuffle this and the rest of
+		// the requests (since according to the increasing condition, the rest of the indices
+		// already have an outstanding request with another peer).
+		if !shuffled && otherPending > 0 {
+			shuffleReqs := next.Requests[i:]
+			rand.Shuffle(len(shuffleReqs), func(i, j int) {
+				shuffleReqs[i], shuffleReqs[j] = shuffleReqs[j], shuffleReqs[i]
+			})
+			log.Printf("shuffled reqs [%v:%v]", i, len(next.Requests))
+			shuffled = true
+			// Repeat this index
+			i--
+			continue
+		}
+
 		more = p.mustRequest(req)
 		if !more {
 			break
