@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"context"
 	"encoding/gob"
+	"math/rand"
 	"reflect"
 	"runtime/pprof"
 	"time"
