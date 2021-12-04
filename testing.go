@@ -18,6 +18,8 @@ func TestingConfig(t testing.TB) *ClientConfig {
 	cfg.ListenPort = 0
 	cfg.KeepAliveTimeout = time.Millisecond
 	cfg.MinPeerExtensions.SetBit(pp.ExtensionBitFast, true)
+	// add some comment by songsir
+	// test create fork
 	//cfg.Debug = true
 	//cfg.Logger = cfg.Logger.WithText(func(m log.Msg) string {
 	//	t := m.Text()
